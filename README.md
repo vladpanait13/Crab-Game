@@ -28,8 +28,8 @@ To play the game:
 
 This game provides a basic framework that you can easily expand upon. Here are some ideas for enhancements that were done for v2:
 
-Added different types of obstacles and power-ups.
-Implemented varying difficulty levels as the score increases.
-Added sound effects and background music.
-Created more detailed graphics or animations for the crab and obstacles.
-Implemented a high score system using local storage.
+- Added different types of obstacles and power-ups.
+- Implemented varying difficulty levels as the score increases.
+- Added sound effects and background music.
+- Created more detailed graphics or animations for the crab and obstacles.
+- Implemented a high score system using local storage.
