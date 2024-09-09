@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Crab Side-Scrolling Game</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #87CEEB; }
+        canvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        let crabY = 200;
+        let crabVelocity = 0;
+        const gravity = 0.5;
+        const jumpStrength = -10;
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let obstacles = [];
+        let powerUps = [];
+        let difficulty = 1;
+        let isInvincible = false;
+        let invincibilityTimer = 0;
+
+        // Sound effects
+        const jumpSound = new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-player-jumping-in-a-video-game-2043.mp3'] });
+        const powerUpSound = new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-magic-sweep-game-trophy-257.mp3'] });
+        const collisionSound = new Howl({ src: ['https://assets.mixkit.co/sfx/preview/mixkit-falling-hit-on-gravel-756.mp3'] });
+        const backgroundMusic = new Howl({
+            src: ['https://assets.mixkit.co/sfx/preview/mixkit-game-level-music-689.mp3'],
+            loop: true,
+            volume: 0.5
+        });
+
+        // Crab animation
+        let crabFrame = 0;
+        const crabFrameCount = 2;
+
+        // Draw crab function
+        function drawCrab(x, y, frame) {
+            ctx.fillStyle = '#FF4500';
+            ctx.fillRect(x, y, 32, 24);
+            
+            // Eyes
+            ctx.fillStyle = 'black';
+            ctx.fillRect(x + 4, y + 4, 8, 8);
+            ctx.fillRect(x + 20, y + 4, 8, 8);
+            
+            // Claws
+            ctx.fillStyle = '#FF4500';
+            ctx.fillRect(x - 8, y + 8, 8, 16);
+            ctx.fillRect(x + 32, y + 8, 8, 16);
+            
+            // Legs
+            const legOffset = frame === 0 ? 0 : 4;
+            ctx.fillRect(x, y + 24 + legOffset, 8, 8);
+            ctx.fillRect(x + 12, y + 24, 8, 8);
+            ctx.fillRect(x + 24, y + 24 - legOffset, 8, 8);
+        }
+
+        // Obstacle types
+        const obstacleTypes = [
+            { color: 'green', width: 20, height: 50, speed: 2 },
+            { color: 'red', width: 30, height: 30, speed: 3 },
+            { color: 'blue', width: 15, height: 70, speed: 1.5 }
+        ];
+
+        // Power-up
+        class PowerUp {
+            constructor() {
+                this.x = canvas.width;
+                this.y = Math.random() * (canvas.height - 20);
+                this.width = 20;
+                this.height = 20;
+            }
+
+            draw() {
+                ctx.fillStyle = 'gold';
+                ctx.beginPath();
+                ctx.moveTo(this.x + 10, this.y);
+                ctx.lineTo(this.x + 20, this.y + 10);
+                ctx.lineTo(this.x + 10, this.y + 20);
+                ctx.lineTo(this.x, this.y + 10);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            update() {
+                this.x -= 2;
+            }
+        }
+
+        // Obstacle
+        class Obstacle {
+            constructor() {
+                const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+                this.x = canvas.width;
+                this.y = Math.random() * (canvas.height - type.height);
+                this.width = type.width;
+                this.height = type.height;
+                this.color = type.color;
+                this.speed = type.speed * difficulty;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            update() {
+                this.x -= this.speed;
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update crab position
+            crabVelocity += gravity;
+            crabY += crabVelocity;
+
+            // Keep crab on screen
+            if (crabY > canvas.height - 32) {
+                crabY = canvas.height - 32;
+                crabVelocity = 0;
+            }
+
+            // Draw crab
+            crabFrame = (crabFrame + 1) % (crabFrameCount * 10);
+            drawCrab(50, crabY, Math.floor(crabFrame / 10));
+
+            // Generate obstacles
+            if (Math.random() < 0.02 * difficulty) {
+                obstacles.push(new Obstacle());
+            }
+
+            // Generate power-ups
+            if (Math.random() < 0.005) {
+                powerUps.push(new PowerUp());
+            }
+
+            // Update and draw obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].update();
+                obstacles[i].draw();
+
+                // Remove off-screen obstacles
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                }
+
+                // Check for collision
+                if (
+                    !isInvincible &&
+                    50 < obstacles[i].x + obstacles[i].width &&
+                    50 + 32 > obstacles[i].x &&
+                    crabY < obstacles[i].y + obstacles[i].height &&
+                    crabY + 24 > obstacles[i].y
+                ) {
+                    collisionSound.play();
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('highScore', highScore);
+                    }
+                    alert('Game Over! Your score: ' + score + '\nHigh Score: ' + highScore);
+                    resetGame();
+                    return;
+                }
+            }
+
+            // Update and draw power-ups
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                powerUps[i].update();
+                powerUps[i].draw();
+
+                // Remove off-screen power-ups
+                if (powerUps[i].x + powerUps[i].width < 0) {
+                    powerUps.splice(i, 1);
+                }
+
+                // Check for collision with power-up
+                if (
+                    50 < powerUps[i].x + powerUps[i].width &&
+                    50 + 32 > powerUps[i].x &&
+                    crabY < powerUps[i].y + powerUps[i].height &&
+                    crabY + 24 > powerUps[i].y
+                ) {
+                    powerUpSound.play();
+                    powerUps.splice(i, 1);
+                    isInvincible = true;
+                    invincibilityTimer = 300; // 5 seconds of invincibility
+                }
+            }
+
+            // Update invincibility
+            if (isInvincible) {
+                invincibilityTimer--;
+                if (invincibilityTimer <= 0) {
+                    isInvincible = false;
+                }
+            }
+
+            // Increase difficulty
+            difficulty = 1 + Math.floor(score / 10) * 0.1;
+
+            // Draw score and high score
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Score: ' + score, 10, 30);
+            ctx.fillText('High Score: ' + highScore, 10, 60);
+
+            // Draw invincibility indicator
+            if (isInvincible) {
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.fillRect(45, crabY - 5, 42, 42);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetGame() {
+            obstacles = [];
+            powerUps = [];
+            score = 0;
+            crabY = 200;
+            crabVelocity = 0;
+            difficulty = 1;
+            isInvincible = false;
+            invincibilityTimer = 0;
+            backgroundMusic.stop();
+            gameLoop();
+        }
+
+        // Start the game loop
+        backgroundMusic.play();
+        gameLoop();
+
+        // Jump on spacebar press
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space' && crabY === canvas.height - 32) {
+                crabVelocity = jumpStrength;
+                jumpSound.play();
+            }
+        });
+    </script>
+</body>
+</html>

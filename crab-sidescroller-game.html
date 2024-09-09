@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crab Side-Scrolling Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        let crabY = 200;
+        let crabVelocity = 0;
+        const gravity = 0.5;
+        const jumpStrength = -10;
+        let score = 0;
+        let obstacles = [];
+
+        // Crab character
+        function drawCrab(x, y) {
+            ctx.fillStyle = '#FF4500';
+            ctx.fillRect(x, y, 32, 24);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(x + 4, y + 4, 8, 8);
+            ctx.fillRect(x + 20, y + 4, 8, 8);
+            ctx.fillStyle = '#FF4500';
+            ctx.fillRect(x - 8, y + 8, 8, 16);
+            ctx.fillRect(x + 32, y + 8, 8, 16);
+            ctx.fillRect(x, y + 24, 8, 8);
+            ctx.fillRect(x + 12, y + 24, 8, 8);
+            ctx.fillRect(x + 24, y + 24, 8, 8);
+        }
+
+        // Obstacle
+        class Obstacle {
+            constructor() {
+                this.x = canvas.width;
+                this.y = Math.random() * (canvas.height - 50);
+                this.width = 20;
+                this.height = 50;
+            }
+
+            draw() {
+                ctx.fillStyle = 'green';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            update() {
+                this.x -= 2;
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update crab position
+            crabVelocity += gravity;
+            crabY += crabVelocity;
+
+            // Keep crab on screen
+            if (crabY > canvas.height - 32) {
+                crabY = canvas.height - 32;
+                crabVelocity = 0;
+            }
+
+            // Draw crab
+            drawCrab(50, crabY);
+
+            // Generate obstacles
+            if (Math.random() < 0.02) {
+                obstacles.push(new Obstacle());
+            }
+
+            // Update and draw obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].update();
+                obstacles[i].draw();
+
+                // Remove off-screen obstacles
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                }
+
+                // Check for collision
+                if (
+                    50 < obstacles[i].x + obstacles[i].width &&
+                    50 + 32 > obstacles[i].x &&
+                    crabY < obstacles[i].y + obstacles[i].height &&
+                    crabY + 24 > obstacles[i].y
+                ) {
+                    alert('Game Over! Your score: ' + score);
+                    obstacles = [];
+                    score = 0;
+                    crabY = 200;
+                    crabVelocity = 0;
+                }
+            }
+
+            // Draw score
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Score: ' + score, 10, 30);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game loop
+        gameLoop();
+
+        // Jump on spacebar press
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space' && crabY === canvas.height - 32) {
+                crabVelocity = jumpStrength;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Body -->
+  <rect x="16" y="24" width="32" height="24" fill="#FF4500"/>
+  
+  <!-- Eyes -->
+  <rect x="20" y="28" width="8" height="8" fill="black"/>
+  <rect x="36" y="28" width="8" height="8" fill="black"/>
+  
+  <!-- Claws -->
+  <rect x="8" y="32" width="8" height="16" fill="#FF4500"/>
+  <rect x="48" y="32" width="8" height="16" fill="#FF4500"/>
+  
+  <!-- Legs -->
+  <rect x="16" y="48" width="8" height="8" fill="#FF4500"/>
+  <rect x="28" y="48" width="8" height="8" fill="#FF4500"/>
+  <rect x="40" y="48" width="8" height="8" fill="#FF4500"/>
+</svg>
